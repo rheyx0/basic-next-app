@@ -1,20 +1,67 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabaseClient";
 
-export default async function Home() {
-  const { data, error } = await supabase.from("test_table").select("*");
+export default function Home() {
+  const [data, setData] = useState<any[]>([]);
+  const [name, setName] = useState("");
 
-  if (error) return <p>Error: {error.message}</p>;
+  // READ
+  const fetchData = async () => {
+    const { data, error } = await supabase.from("test_table").select("*");
+    if (!error) setData(data);
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  // CREATE
+  const addItem = async () => {
+    if (!name) return;
+    await supabase.from("test_table").insert([{ name }]);
+    setName("");
+    fetchData();
+  };
+
+  // DELETE
+  const deleteItem = async (id: number) => {
+    await supabase.from("test_table").delete().eq("id", id);
+    fetchData();
+  };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-center py-32 px-16 bg-white dark:bg-black text-center">
-        <h1 className="text-3xl font-semibold text-black dark:text-white mb-6">
-          Supabase Data
-        </h1>
-        <pre className="text-left bg-gray-100 dark:bg-gray-800 p-4 rounded-lg w-full overflow-x-auto">
-          {JSON.stringify(data, null, 2)}
-        </pre>
-      </main>
+    <div className="p-10">
+      <h1 className="text-2xl font-bold mb-4">CRUD Demo</h1>
+
+      {/* CREATE */}
+      <div className="mb-4">
+        <input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Enter name"
+          className="border p-2 mr-2"
+        />
+        <button onClick={addItem} className="bg-blue-500 text-white px-4 py-2">
+          Add
+        </button>
+      </div>
+
+      {/* READ + DELETE */}
+      <ul>
+        {data.map((item) => (
+          <li key={item.id} className="mb-2">
+            {item.name}
+            <button
+              onClick={() => deleteItem(item.id)}
+              className="ml-4 bg-red-500 text-white px-2"
+            >
+              Delete
+            </button>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
